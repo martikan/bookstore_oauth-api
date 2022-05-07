@@ -1,8 +1,10 @@
 package access_token
 
 import (
-	"fmt"
+	"strings"
 	"time"
+
+	"github.com/martikan/bookstore_oauth-api/errors"
 )
 
 const (
@@ -16,6 +18,28 @@ type AccessToken struct {
 	Expires     int64  `json:"expires"`
 }
 
+func (at *AccessToken) Validate() *errors.RestError {
+
+	at.AccessToken = strings.TrimSpace(at.AccessToken)
+	if at.AccessToken == "" {
+		return errors.NewBadRequestError("Invalid access token")
+	}
+
+	if at.UserId <= 0 {
+		return errors.NewBadRequestError("Invalid user id")
+	}
+
+	if at.ClientId <= 0 {
+		return errors.NewBadRequestError("Invalid client id")
+	}
+
+	if at.Expires <= 0 {
+		return errors.NewBadRequestError("Invalid expiration time")
+	}
+
+	return nil
+}
+
 func GetNewAccessToken() AccessToken {
 	return AccessToken{
 		Expires: time.Now().UTC().Add(expirationTime * time.Hour).Unix(),
@@ -23,11 +47,5 @@ func GetNewAccessToken() AccessToken {
 }
 
 func (at AccessToken) IsExpired() bool {
-
-	now := time.Now().UTC()
-
-	expirationTime := time.Unix(at.Expires, 0)
-	fmt.Println("Expiration time:", expirationTime)
-
-	return expirationTime.Before(now)
+	return time.Unix(at.Expires, 0).Before(time.Now().UTC())
 }
